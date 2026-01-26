@@ -13,7 +13,7 @@ template <typename T> struct Vec<2, T> {
 
   // <Constructor>
   // constexpr Vec() = default;
-  // constexpr Vec(Vec const& v) = default;
+  // constexpr Vec(Vec const &v) = default;
 
   constexpr Vec() : x(0), y(0) {}
   constexpr Vec(Vec<2, T> const &value) : x(value.x), y(value.y) {}

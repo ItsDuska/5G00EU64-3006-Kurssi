@@ -1,8 +1,22 @@
 #include "CellHandler.hpp"
 #include "vec2.hpp"
+#include <cstring>
+#include <fstream>
 #include <iostream>
 
 namespace life {
+
+// tämä structi on sama kuin se toinen, koska memcpy ei halunnut toimia sen
+// kanssa.
+// Virhe: ”void* memcpy(void*, const void*, size_t)” kirjoittaa
+// ei-triviaalisti-kopioitavaan tyyppiin ”life::Vec2u16” {aka ”struct
+// life::Vec<2, short unsigned int>”}; use copy-assignment or
+// copy-initialization instead
+// vähä röpö, mutta ei
+struct Vec2u16_t {
+  uint16_t x;
+  uint16_t y;
+};
 
 uint32_t vec2ToIndex(Vec2u16 position, uint16_t rowSize) {
   return static_cast<uint32_t>((position.y * rowSize) + position.x);
@@ -12,7 +26,79 @@ CellHandler::CellHandler(Vec2u16 gridSize) : gridSize(gridSize) {
   const uint32_t size = getSize();
   futureGrid.resize(size, false);
   currentGrid.resize(size, false);
-  std::cout << "x: " << gridSize.x << "\n" << "y: " << gridSize.y << "\n";
+}
+
+// Ohjeissa luki, että esimmäinen rivi tiedostossa pitää olla sen nimi, mutta
+// olemme sen verran erilaisempia, että siirrämme sen nimen tiedosto nimeksi.
+// Täten ensimmäinen rivi tulee olemaan peli alueen x ja y koko. Sitten vasta
+// kaikki muu :D
+bool CellHandler::loadFromFile(std::string &filename) {
+  std::ifstream file(filename);
+  if (!file.is_open()) {
+    return false;
+  }
+
+  file.seekg(0, std::ios::end);
+  const size_t fileSize = file.tellg();
+  file.seekg(0, std::ios::beg);
+
+  if (fileSize <= 0) {
+    return false;
+  }
+
+  std::vector<char> buffer(fileSize);
+  file.read(buffer.data(), fileSize);
+
+  Vec2u16_t newGridSize;
+  memcpy(&newGridSize, buffer.data(), sizeof(Vec2u16));
+  gridSize.x = newGridSize.x;
+  gridSize.y = newGridSize.y;
+
+  const uint32_t newGridArraySize = getSize();
+  futureGrid.resize(newGridArraySize, false);
+  currentGrid.resize(newGridArraySize, false);
+
+  // skippa gridSize ja ensimmäinen \n char
+  size_t offset = sizeof(Vec2u16) + 1;
+  Vec2u16 position{0, 0};
+
+  for (size_t i = offset; i < buffer.size(); ++i) {
+    char c = buffer[i];
+    if (c == '\n') {
+      position.y++;
+      position.x = 0;
+      continue;
+    }
+
+    if (c == 'x') {
+      setTile(position);
+    }
+    position.x++;
+  }
+
+  return true;
+}
+
+bool CellHandler::saveFile(std::string &filename) {
+  std::ofstream file(filename, std::ios::binary);
+  if (!file.is_open()) {
+    return false;
+  }
+  const char *ptr = reinterpret_cast<const char *>(&gridSize);
+  file.write(ptr, sizeof(Vec2u16));
+
+  file.put('\n');
+
+  for (uint16_t row = 0; row < gridSize.y; ++row) {
+    for (uint16_t col = 0; col < gridSize.x; ++col) {
+      Vec2u16 pos(col, row);
+      bool alive = getCellState(pos);
+      file.put(alive ? 'x' : ' ');
+    }
+    file.put('\n');
+  }
+
+  return true;
 }
 
 void CellHandler::setTile(Vec2u16 position) {

@@ -1,6 +1,7 @@
 #pragma once
 #include "vec2.hpp"
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace life {
@@ -11,6 +12,8 @@ public:
   CellHandler(Vec2u16 gridSize);
   ~CellHandler() = default;
 
+  bool loadFromFile(std::string &filename);
+  bool saveFile(std::string &filename);
   void setTile(Vec2u16 position);
 
   void update();

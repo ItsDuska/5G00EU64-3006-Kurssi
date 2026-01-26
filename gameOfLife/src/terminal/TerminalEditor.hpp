@@ -20,6 +20,9 @@ private:
   bool hasAliveCells();
   bool checkInput(int timeoutMs);
 
+  void loadGameState();
+  void saveGameState();
+
   void enableRawMode();
   void disableRawMode();
 
@@ -30,6 +33,7 @@ private:
   bool autoRunning;
   uint32_t generation;
   uint32_t delayMs;
+  std::string currentFileName;
 };
 
 } // namespace life

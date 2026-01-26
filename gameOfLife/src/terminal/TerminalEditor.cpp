@@ -204,9 +204,67 @@ void TerminalEditor::handleInput() {
   }
 }
 
-void TerminalEditor::run() {
-  enableRawMode();
+void TerminalEditor::loadGameState() {
+  char choice;
 
+  std::cout << "Load initial configuration from file? (y/n): ";
+  std::cin >> choice;
+  std::cin.ignore(100, '\n');
+
+  if (choice != 'y') {
+    return;
+  }
+
+  std::string filename;
+  std::cout << "Enter file name: ";
+  std::getline(std::cin, filename);
+
+  if (!handler.loadFromFile(filename)) {
+    std::cout << "Failed to load file. Starting with empty grid...\n";
+  } else {
+    std::cout << "Configuration loaded successfully...\n";
+    currentFileName = filename;
+  }
+
+  gridSize = handler.getGridSize();
+
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+}
+
+void TerminalEditor::saveGameState() {
+  char choice;
+
+  std::cout << "save current game state (y/n): ";
+  std::cin >> choice;
+  std::cin.ignore(100, '\n');
+  if (choice != 'y') {
+    return;
+  }
+
+  std::string filename;
+  if (currentFileName.empty()) {
+    std::cout << "Enter file name to save: ";
+  } else {
+    std::cout << "Enter file name or press enter to use the last name {"
+              << currentFileName << "}: ";
+  }
+
+  std::getline(std::cin, filename);
+
+  if (filename.empty()) {
+    filename = currentFileName;
+  }
+
+  if (!handler.saveFile(filename)) {
+    std::cout << "Failed to load file. Starting with empty grid...\n";
+  } else {
+    std::cout << "File saved successfully.\n";
+  }
+}
+
+void TerminalEditor::run() {
+  loadGameState();
+  enableRawMode();
   render();
 
   while (running) {
@@ -239,6 +297,7 @@ void TerminalEditor::run() {
   disableRawMode();
   clearScreen();
   std::cout << "Editor closed. Final generation: " << generation << "\n";
+  saveGameState();
 }
 
 } // namespace life
